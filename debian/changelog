@@ -1,3 +1,18 @@
+smtm (1.6.0) unstable; urgency=low
+
+  * New major release:
+  
+    - In 'gallery' mode, smtm now updates chart windows along with the 
+      normal data allowing for automatically updated intra-daily or
+      intra-weekly charts (longer horizons are updated less frequently
+      than daily at Yahoo!). Gallery mode can be launched either via
+      the command-line option '--gallery', or via the Chart->Gallery
+      menu entry.
+  
+    - Small updates to documentation
+
+ -- Dirk Eddelbuettel <edd@debian.org>  Tue,  6 Jan 2004 20:38:16 -0600
+
 smtm (1.5.6) unstable; urgency=low
 
   * Bug fix release:

@@ -2,7 +2,7 @@
 #
 #   smtm --- A global stock ticker for X11 and Windoze
 #
-#   Copyright (C) 1999 - 2003  Dirk Eddelbuettel <edd@debian.org>
+#   Copyright (C) 1999 - 2004  Dirk Eddelbuettel <edd@debian.org>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -18,10 +18,11 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.100 2003/10/16 01:40:08 edd Exp $
+#   $Id: smtm.pl,v 1.106 2004/01/07 02:51:12 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
+use Data::Dumper; # FIXME
 use Date::Manip;		# for date calculations
 use File::Spec;			# portable filename operations
 use Finance::YahooQuote;	# fetch quotes from Yahoo!
@@ -37,9 +38,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.5.6";		# updated from the debian/rules Makefile
+$VERSION = "1.5.4";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2003/10/16 01:40:08 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2004/01/07 02:51:12 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -275,8 +276,9 @@ sub menus {			# create the menus
 		     -variable => \$chart{parabolic_sar});
   $M[2]->AddItems(["command" => "Enter ~Comparison Symbol(s)", 
 		   -command => \&get_comparison_symbol]);
-  $M[2]->AddItems(["command" => "Chart ~Gallery", 
-		   -command => \&show_gallery]);
+  $M[2]->checkbutton(-label => "Chart ~Gallery", 
+		     -variable => \$options{gallery},
+		     -command => \&show_gallery);
 
   $M[3] = $MF->Menubutton(-text => 'Help', -underline => 0,
 			 )->pack(-side => 'right');
@@ -821,6 +823,38 @@ sub button_or_mouseclick_close {
   }
 }
 
+sub add_image_close_button($$) {
+  my ($arg, $new) = @_;
+
+  if ($options{nookbutton}) {
+    $Dat{Label}[$arg]->bind("<Button-1>",
+			    sub { 
+			      $Dat{Image}[$arg]->delete; 
+			      $Dat{Chart}[$arg]->destroy();
+			      delete $Dat{Chart}[$arg] 
+				or die "Cannot delete chart\n";
+			      delete $Dat{Image}[$arg] 
+				or die "Cannot delete image\n";
+			      delete $Dat{Label}[$arg] 
+				or die "Cannot delete label\n";
+			    });
+  } elsif ($new) {
+    $Dat{Chart}[$arg]->Button(-text => 'Ok', 
+			      -command => sub { 
+				$Dat{Image}[$arg]->delete; 
+				$Dat{Chart}[$arg]->destroy();
+				delete $Dat{Chart}[$arg] 
+				  or die "Cannot delete chart\n";
+				delete $Dat{Image}[$arg] 
+				  or die "Cannot delete image\n";
+				delete $Dat{Label}[$arg] 
+				  or die "Cannot delete label\n";
+			      },
+			     )->pack(-side => 'bottom') 
+			       or die "Cannot create button\n";
+  }
+}
+
 sub view_image {
   my ($widget,$arg) = @_;
   my @arr = split (';', $Dat{Data}{ $Dat{Map}[$arg]  });
@@ -832,26 +866,48 @@ sub view_image {
   $ua->timeout($options{timeout});	# time out after this many secs
   my $resp = $ua->request(GET $url);
   if ($resp->is_error) {		# error in retrieving the chart;
+    my $new = 0;			# by default we renew 
+    if (!exists($Dat{Chart}[$arg])) {  #}or defined($Dat{Chart}[$arg])) {
+      $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
+      $new = 1;				# remember that this is a first 
+    }
     my $TL = $Main->Toplevel;		# most likely 404 (not found);
     $TL->title ("Error");		# Yahoo returns HTML, not a NULL,
+    $Dat{Chart}[$arg] = $TL;		# store for later update 
     my $Text = $TL->Label(-padx =>5,	# so need to check return code
-		-pady =>5,
-		-text =>"The chart for $arr[1] is not available.")->pack;
-    button_or_mouseclick_close($TL,$Text);
+			  -pady =>5,
+			  -text =>"The chart for $arr[1] is not available."
+			 )->pack;
+    $Dat{Label}[$arg] = $Text;		# store the label 
+    $Dat{Photo}[$arg] = "placeholder";  # and an image placeholder 
+    add_image_close_button($arg, $new);
   } else {
-    my $TL = $Main->Toplevel;		# new toplevel widget ...
-    $TL->title ("Graph for $arr[1]");
-    ## can pass the web-request response to Photo widget once base64 encoded
-    my $PH = $TL->Photo(-data => encode_base64($resp->content),
-			-format => "gif");
-    my $LB = $TL->Label(-image => $PH)->pack();
-    if ($options{nookbutton}) {
-      $LB->bind("<Button-1>", sub { $PH->delete; $TL->destroy; }); 
-    } else {
-      $TL->Button(-text => 'Ok',
-		  -command => sub { $PH->delete; $TL->destroy();} 
-		 )->pack(-side => 'bottom');
+    my $new = 0;			# by default we renew 
+    my ($TL, $PH);
+
+    if (!exists($Dat{Chart}[$arg])) {  #}or defined($Dat{Chart}[$arg])) {
+      $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
+      $new = 1;				# remember that this is a first 
     }
+    $Dat{Chart}[$arg]->title("Graph for $arr[1] at " . 
+			     POSIX::strftime("%H:%M", localtime));
+    $TL = $Dat{Chart}[$arg];
+
+    if (exists($Dat{Image}[$arg])) { 	# if we have a previous image
+      $Dat{Image}[$arg]->delete; 	# delete it (to reclaim memory)
+    }
+    ## can pass the web-request response to Photo widget once base64 encoded
+    $Dat{Image}[$arg] = $TL->Photo(-data => encode_base64($resp->content),
+				   -format => "gif");
+    $PH = $Dat{Image}[$arg];
+
+    if (exists($Dat{Label}[$arg])) {	# if we have a previous label
+      $Dat{Label}[$arg]->destroy();	# destroy it (to make new one visible)
+    }
+    $Dat{Label}[$arg] = $TL->Label(-image => $PH)->pack();
+
+    ##
+    add_image_close_button($arg, $new);
   }
 }
 
@@ -1023,8 +1079,8 @@ sub edit_stock {
 		$Dat{PurchDate}{$key}  = defined($data[5]) ? $data[5] : 0;
 		$TL->destroy();
 		init_fx(); 
-	    }   
-	      )->pack(-side => 'bottom');
+	      }
+	     )->pack(-side => 'bottom');
 }
 
 sub init_fx {			# find unique crosscurrencies
@@ -1040,7 +1096,7 @@ sub init_fx {			# find unique crosscurrencies
   buttons();
 }
 
-sub show_gallery {
+sub show_gallery {		# update the pictures in 'gallery' mode
   view_image($Main, $ARG) foreach (0..$#{$Dat{Arg}});
 }
 
@@ -1068,8 +1124,6 @@ sub init_data {			# fill all arguments into main data structure
   }
 
   init_fx();
-
-  show_gallery() if $options{gallery};
 }
 
 sub file_save {			# store in resource file
@@ -1127,8 +1181,8 @@ sub add_stock {
 				$TL->destroy();
 				insert_stock($ARG);
 				init_fx();
-			    }   
-	      )->pack(-side => 'bottom');
+			      }
+	     )->pack(-side => 'bottom');
 }
 
 sub del_stock {			# delete one or several stocks
@@ -1270,7 +1324,7 @@ sub help_exit {			# command-line help
 smtm -- Display/update a global stock ticker, profit/loss counter and charts
 
 smtm version $VERSION of $date
-Copyright (C) 1999 - 2003 by Dirk Eddelbuettel <edd\@debian.org>
+Copyright (C) 1999 - 2004 by Dirk Eddelbuettel <edd\@debian.org>
 smtm comes with ABSOLUTELY NO WARRANTY. This is free software, 
 and you are welcome to redistribute it under certain conditions. 
 For details, select Help->License or type Alt-h l once smtm runs.
@@ -1306,7 +1360,7 @@ Options:
 		     one of 'b' (intra-day), 'w' (1 week), '3' (3 months),
 		     '6' (6 months), '1' (1 year), '2' (2 year), '5' 
                      (5 year) or 'm' (max years) (default: $chart{length})
-   --gallery	     show charts of all available symbols
+   --gallery	     show and update charts of all available symbols
    --timeout len     timeout value in seconds for libwww-perl UserAgent
                      (default value: $options{timeout})
    --wide	     display the holdings value and change in the window title
@@ -1513,7 +1567,9 @@ several of these, separated by comma) for performance
 comparison. Lastly, the gallery command can launch the display of a
 chart for each and every stock symbol currenly loaded in the smtm
 display.  Note that intra-day and intra-week charts do not offer all
-the various charting options longer-dated charts have available.
+the various charting options longer-dated charts have available.  Once
+charts are shown, they are also updated regularly at the same interval
+the main displayed is updated at.
 
 Lastly, the I<Help> menu can display either the text from the manual
 page, or the copyright information in a new window.
@@ -1555,6 +1611,21 @@ markets, thanks to expanded support by Yahoo!.  Clicking on the chart
 window itself closes this window. Finally, the middle mouse button
 opens an edit window.
 
+=head1 CHART DISPLAY (AKA 'GALLERY' MODE)
+
+In 'gallery' mode, chart windows are opened for all active securities.
+These charts are automatically updated whenever the display is
+updated.  This mean that only the intra-daily and intra-weekly chart
+timeframe selection are meaningful -- all others are updated at the
+source, i.e. Yahoo!, daily or weekly, and there is no little point in
+downloading the same chart over and over again.
+
+However, for intra-daily and intra-weekly charts, this is a very
+useful feature. It should be noted that not all chart size, chart
+timeframe and chart option permutations actually lead to existing
+charts. For example, logarithmic scale does seem to exist for
+shorter-dated time frames. Neither does the 'small' chart size.
+
 =head1 BUGS
 
 Closing the stock addition or deletion windows have been reported to
@@ -1583,12 +1654,16 @@ Finance charts.
 
 =head1 COPYRIGHT
 
-smtm is (c) 1999 - 2003 by Dirk Eddelbuettel <edd@debian.org>
+smtm is (c) 1999 - 2004 by Dirk Eddelbuettel <edd@debian.org>
 
 Updates to this program might appear at
 F<http://dirk.eddelbuettel.com/code/smtm.html>. If you enjoy this
 program, you might also want to look at my beancounter program
-F<http://dirk.eddelbuettel.com/code/beancounter.html>.
+F<http://dirk.eddelbuettel.com/code/beancounter.html>, as well as the
+Finance::YahooQuote module at
+F<http://dirk.eddelbuettel.com/code/yahooquote.html> which was
+originally written by Dj Padzensky, and that is used by both B<smtm>
+and B<beancounter>.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1602,17 +1677,18 @@ information.
 
 =head1 ACKNOWLEDGEMENTS
 
-The Perl code by Dj Padzensky, in particular his B<Finance::YahooQuote>
-module (on the web at F<http://www.padz.net/~djpadz/YahooQuote/> as well 
-as at F<http://dirk.eddelbuettel.com/code/yahooquote.html/>) and
-his Finance::YahooChart module (on the web at
+The Perl code by Dj Padzensky, in particular his
+B<Finance::YahooQuote> module (originally on the web at
+F<http://www.padz.net/~djpadz/YahooQuote/> and now maintained by me at
+F<http://dirk.eddelbuettel.com/code/yahooquote.html/>) and his
+Finance::YahooChart module (on the web at
 F<http://www.padz.net/~djpadz/YahooChart/>) were most helpful. They
 provided the initial routines for downloading stock data and
-determining the Yahoo! Chart url. Earlier version of B<smtm> use
-a somewhat rewrittem variant (which still reflected their heritage), 
+determining the Yahoo! Chart url. Earlier version of B<smtm> use a
+somewhat rewrittem variant (which still reflected their heritage),
 newer version rely directly on B<Finance::YahooQuote> now that Yahoo!
-uses a similar backend across the globe. Dj's code contribution is most
-gratefully acknowledged.
+uses a similar backend across the globe. Dj's code contribution is
+most gratefully acknowledged.
 
 =head1 CPAN 
 
@@ -1626,7 +1702,8 @@ Networking
 
 =head1 PREREQUISITES
 
-F<smtm> uses F<http://www.activestate.com>.  In either case, it
+On Windows, F<smtm> can use the Perl distribution from
+F<http://www.activestate.com>.  On both Unix and Windows, B<smtm>
 requires the C<Tk> module for windowing, the C<LWP> module for data
 retrieval over the web, and the excellent C<Date::Manip> module for
 the date parsing and calculations.
@@ -1651,4 +1728,5 @@ available at Yahoo! Finance. Fairly extensive documentation for
 B<smtm> is available at F<http://dirk.eddelbuettel.com/code/smtm.html>.
 
 =cut
+
 
