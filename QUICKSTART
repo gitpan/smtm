@@ -1,8 +1,0 @@
-
-Following Perl convention, the installation should work as
-
-         perl Makefile.PL # optionally "perl Makefile.PL verbose"
-         make
-         make install     
-
-but I cannot really test this as I install the Debian packages myself.

@@ -19,6 +19,7 @@
 	<li><a href="#examples">EXAMPLES</a></li>
 	<li><a href="#menus">MENUS</a></li>
 	<li><a href="#display">DISPLAY</a></li>
+	<li><a href="#chart_display__aka__gallery__mode_">CHART DISPLAY (AKA 'GALLERY' MODE)</a></li>
 	<li><a href="#bugs">BUGS</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
@@ -203,7 +204,9 @@ several of these, separated by comma) for performance
 comparison. Lastly, the gallery command can launch the display of a
 chart for each and every stock symbol currenly loaded in the smtm
 display.  Note that intra-day and intra-week charts do not offer all
-the various charting options longer-dated charts have available.</p>
+the various charting options longer-dated charts have available.  Once
+charts are shown, they are also updated regularly at the same interval
+the main displayed is updated at.</p>
 <p>Lastly, the <em>Help</em> menu can display either the text from the manual
 page, or the copyright information in a new window.</p>
 <p>
@@ -245,6 +248,21 @@ opens an edit window.</p>
 <p>
 </p>
 <hr />
+<h1><a name="chart_display__aka__gallery__mode_">CHART DISPLAY (AKA 'GALLERY' MODE)</a></h1>
+<p>In 'gallery' mode, chart windows are opened for all active securities.
+These charts are automatically updated whenever the display is
+updated.  This mean that only the intra-daily and intra-weekly chart
+timeframe selection are meaningful -- all others are updated at the
+source, i.e. Yahoo!, daily or weekly, and there is no little point in
+downloading the same chart over and over again.</p>
+<p>However, for intra-daily and intra-weekly charts, this is a very
+useful feature. It should be noted that not all chart size, chart
+timeframe and chart option permutations actually lead to existing
+charts. For example, logarithmic scale does seem to exist for
+shorter-dated time frames. Neither does the 'small' chart size.</p>
+<p>
+</p>
+<hr />
 <h1><a name="bugs">BUGS</a></h1>
 <p>Closing the stock addition or deletion windows have been reported to
 cause random segmentation violation under Linux. This appears to be a
@@ -271,11 +289,15 @@ Finance charts.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>smtm is (c) 1999 - 2003 by Dirk Eddelbuettel &lt;<a href="mailto:edd@debian.org">edd@debian.org</a>&gt;</p>
+<p>smtm is (c) 1999 - 2004 by Dirk Eddelbuettel &lt;<a href="mailto:edd@debian.org">edd@debian.org</a>&gt;</p>
 <p>Updates to this program might appear at
 <em><a href="http://dirk.eddelbuettel.com/code/smtm.html">http://dirk.eddelbuettel.com/code/smtm.html</a></em>. If you enjoy this
 program, you might also want to look at my beancounter program
-<em><a href="http://dirk.eddelbuettel.com/code/beancounter.html">http://dirk.eddelbuettel.com/code/beancounter.html</a></em>.</p>
+<em><a href="http://dirk.eddelbuettel.com/code/beancounter.html">http://dirk.eddelbuettel.com/code/beancounter.html</a></em>, as well as the
+Finance::YahooQuote module at
+<em><a href="http://dirk.eddelbuettel.com/code/yahooquote.html">http://dirk.eddelbuettel.com/code/yahooquote.html</a></em> which was
+originally written by Dj Padzensky, and that is used by both <strong>smtm</strong>
+and <strong>beancounter</strong>.</p>
 <p>This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -288,17 +310,18 @@ information.</p>
 </p>
 <hr />
 <h1><a name="acknowledgements">ACKNOWLEDGEMENTS</a></h1>
-<p>The Perl code by Dj Padzensky, in particular his <strong>Finance::YahooQuote</strong>
-module (on the web at <em><a href="http://www.padz.net/~djpadz/YahooQuote/">http://www.padz.net/~djpadz/YahooQuote/</a></em> as well 
-as at <em><a href="http://dirk.eddelbuettel.com/code/yahooquote.html/">http://dirk.eddelbuettel.com/code/yahooquote.html/</a></em>) and
-his Finance::YahooChart module (on the web at
+<p>The Perl code by Dj Padzensky, in particular his
+<strong>Finance::YahooQuote</strong> module (originally on the web at
+<em><a href="http://www.padz.net/~djpadz/YahooQuote/">http://www.padz.net/~djpadz/YahooQuote/</a></em> and now maintained by me at
+<em><a href="http://dirk.eddelbuettel.com/code/yahooquote.html/">http://dirk.eddelbuettel.com/code/yahooquote.html/</a></em>) and his
+Finance::YahooChart module (on the web at
 <em><a href="http://www.padz.net/~djpadz/YahooChart/">http://www.padz.net/~djpadz/YahooChart/</a></em>) were most helpful. They
 provided the initial routines for downloading stock data and
-determining the Yahoo! Chart url. Earlier version of <strong>smtm</strong> use
-a somewhat rewrittem variant (which still reflected their heritage), 
+determining the Yahoo! Chart url. Earlier version of <strong>smtm</strong> use a
+somewhat rewrittem variant (which still reflected their heritage),
 newer version rely directly on <strong>Finance::YahooQuote</strong> now that Yahoo!
-uses a similar backend across the globe. Dj's code contribution is most
-gratefully acknowledged.</p>
+uses a similar backend across the globe. Dj's code contribution is
+most gratefully acknowledged.</p>
 <p>
 </p>
 <hr />
@@ -315,7 +338,8 @@ Finance section, <em>Networking</em> was as good as the other choices.</p>
 </p>
 <hr />
 <h1><a name="prerequisites">PREREQUISITES</a></h1>
-<p><em>smtm</em> uses <em><a href="http://www.activestate.com">http://www.activestate.com</a></em>.  In either case, it
+<p>On Windows, <em>smtm</em> can use the Perl distribution from
+<em><a href="http://www.activestate.com">http://www.activestate.com</a></em>.  On both Unix and Windows, <strong>smtm</strong>
 requires the <code>Tk</code> module for windowing, the <code>LWP</code> module for data
 retrieval over the web, and the excellent <code>Date::Manip</code> module for
 the date parsing and calculations.</p>

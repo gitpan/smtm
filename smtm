@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.106 2004/01/07 02:51:12 edd Exp $
+#   $Id: smtm.pl,v 1.108 2004/03/10 03:13:34 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -38,9 +38,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.5.4";		# updated from the debian/rules Makefile
+$VERSION = "1.6.1";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2004/01/07 02:51:12 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2004/03/10 03:13:34 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -412,7 +412,8 @@ sub update_data {		# gather data from Yahoo! servers
   undef $Dat{Data};
 
   # NA: name,symbol,price,last date (m/d/y),time,change,percent,volume,avg vol,
-  #     bid, ask, previous,open,day range,52 week range,eps,p/e,div,divyld, cap
+  #     bid, ask, previous,open,day range,52 week range,eps,p/e,
+  #     div pay date,annual div amt, divyld, cap
   if ($#{@{$Dat{NA}}}>-1) {	# if there are stocks for Yahoo! North America
     fill_with_dummies(@{$Dat{NA}});
     ## call just as the symbol, i.e. without the number key past ':'
@@ -504,8 +505,17 @@ sub compute_positions {
     }
     $Dat{EPS}{$symbol} = $arr[15] || 0;
     $Dat{PE}{$symbol} = $arr[16] || 0;
-    $Dat{DivYield}{$symbol} = $arr[18] || 0;
-    $Dat{MarketCap}{$symbol} = $arr[19] || 0;
+    $Dat{DivDate}{$symbol} = $arr[17] || 0;
+    $Dat{DivAmount}{$symbol} = $arr[18] || 0;
+    $Dat{DivYield}{$symbol} = $arr[19] || 0;
+    if ($arr[20] ne "N/A") {	# need to regularise oddball market string
+      # before the dot, the dot, first decimal, remaining decimal, units
+      my ($pre,$p1,$p2,$s) = ($arr[20] =~ m/(\d*)\.(\d)(\d*)(B|M|K)$/);
+      #print "$arr[20] -> $pre DOT $p1 $p2 $s\n";
+      $Dat{MarketCap}{$symbol} = "$pre" . "." . $p1 . $s;
+    } else {
+      $Dat{MarketCap}{$symbol} = "N/A";
+    }
     foreach ("EPS","PE", "DivYield") {
       $Dat{$ARG}{$symbol} = 0 if $Dat{$ARG}{$symbol} eq "N/A";
     }
@@ -604,8 +614,10 @@ sub update_display {
   }
   my $max_mktcap = 0;
   foreach my $val (values %{$Dat{MarketCap}}) {
-    $max_mktcap = $val if (defined($val) and $val ne "N/A" and $val ne "-"
-			   and $val > $max_mktcap);
+    my $nval = $val;
+    $nval =~ s/(B|M|K)$//;  
+    $max_mktcap = $nval if (defined($val) and $val ne "N/A" 
+			   and $val ne "-" and $nval > $max_mktcap);
   }
 
   my $max_fpos = 0;
@@ -726,7 +738,7 @@ sub update_display {
       if $coldisp{D};
     if ($coldisp{m}) {
       if ($Dat{MarketCap}{$symbol} ne "N/A") {
-	$Labels[$i] .= sprintf("%$max_mktcap.2f ", $Dat{MarketCap}{$symbol})
+        $Labels[$i] .= sprintf("%*s ", $max_mktcap, $Dat{MarketCap}{$symbol});
       } else {
 	$Labels[$i] .= sprintf("%*s ", $max_mktcap, "NA");
       }
@@ -753,13 +765,15 @@ sub update_display {
 
 sub digits {			# calculate nb of digits sprintf will need
   my $x = shift;
+  my $count = 0;
 
+  $count = $x =~ s/[BKM]$//;
   # rounded(log10(0.5) gives 0 even though this has 1 leading decimal
   $x *= 10 if (abs($x) > 0 and abs($x) < 1); 
   $x *= 10 if ($x<0);		# add one for minus sign
   $x = abs($x) if ($x < 0);	# need absolute value of neg. values
   if ($x != 0) {
-    return int(log($x)/log(10)+1);# this gives the rounded log10 of x
+    return int(log($x)/log(10)+1) + $count;# this gives the rounded log10 of x
   } else {
     return 1;
   }
@@ -773,22 +787,25 @@ sub max {
 sub show_details {		# display per-share details
   my $key = shift;
   my $TL = $Main->Toplevel;	# new toplevel widget ...
-  my $Text = $TL->Text(-height => 26, 
+  $TL->resizable(0,0);		# no resizing
+  my (@text) = ("Symbol", "Name", "Price", "Date", "Time", "Change",
+		"Percent. Change", "Volume", "Average Volume", 
+		"Bid", "Ask", "Previous", "Open", "Day Range",
+		"52 Week Range", "Earnings/Share", "Price/Earnings",
+		"Dividend Date", "Dividend Amount", "Dividend Yield",
+		"Market Capital");
+  my $Text = $TL->Text(-height => 1 + $#text + 6, # 6 computed position values
 		       -width => 39,
 		       -font => $BFont,
-		      )->pack();
+		       )->pack();
   my @arr = split (';', $Dat{Data}{ $Dat{Map}[$key]  });
   my $symbol = $arr[0];
+
   $arr[0] = $Dat{Symbol}{$arr[0]};
   $arr[1] = substr(get_pretty_name($Dat{GivenName}{$symbol}, 
 				   $Dat{Name}{$symbol}) || "-- No connection",
 				   0, 22);
   $TL->title("Details for $arr[1]");
-  my @text = ("Symbol", "Name", "Price", "Date", "Time", "Change",
-	      "Percent. Change", "Volume", "Average Volume", 
-	      "Bid", "Ask", "Previous", "Open", "Day Range",
-	      "52 Week Range", "Earnings/Share", "Price/Earnings", "Dividend",
-	      "Dividend Yield", "Market Capital");
   foreach (0..$#text) {
     $Text->insert('end',  sprintf("%-16s %s\n", $text[$ARG], $arr[$ARG]));
   }
@@ -867,11 +884,12 @@ sub view_image {
   my $resp = $ua->request(GET $url);
   if ($resp->is_error) {		# error in retrieving the chart;
     my $new = 0;			# by default we renew 
-    if (!exists($Dat{Chart}[$arg])) {  #}or defined($Dat{Chart}[$arg])) {
+    if (!exists($Dat{Chart}[$arg])) {  
       $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
       $new = 1;				# remember that this is a first 
     }
-    my $TL = $Main->Toplevel;		# most likely 404 (not found);
+    my $TL = $Dat{Chart}[$arg];		# most likely 404 (not found);
+    $TL->resizable(0,0);		# no resizing
     $TL->title ("Error");		# Yahoo returns HTML, not a NULL,
     $Dat{Chart}[$arg] = $TL;		# store for later update 
     my $Text = $TL->Label(-padx =>5,	# so need to check return code
@@ -892,6 +910,7 @@ sub view_image {
     $Dat{Chart}[$arg]->title("Graph for $arr[1] at " . 
 			     POSIX::strftime("%H:%M", localtime));
     $TL = $Dat{Chart}[$arg];
+    $TL->resizable(0,0);		# no resizing
 
     if (exists($Dat{Image}[$arg])) { 	# if we have a previous image
       $Dat{Image}[$arg]->delete; 	# delete it (to reclaim memory)
@@ -1053,6 +1072,7 @@ sub edit_stock {
   my $key = $Dat{Map}[$arg];
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Edit Stock");
+  $TL->resizable(0,0);		# no resizing
   my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
   my @data = ( $Dat{Symbol}{$key},
@@ -1162,6 +1182,7 @@ sub file_save {			# store in resource file
 sub add_stock {
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Add Stock");
+  $TL->resizable(0,0);		# no resizing
   my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
   my @data = ("", "", "", "", "", "" );
@@ -1187,6 +1208,7 @@ sub add_stock {
 
 sub del_stock {			# delete one or several stocks
   my $TL = $Main->Toplevel;	# new toplevel widget ...
+  $TL->resizable(0,0);		# no resizing
   $TL->title ("Delete Stock(s)");
   my $LB = $TL->Scrolled("Listbox", 
 			 -selectmode => "multiple",
@@ -1220,6 +1242,7 @@ sub del_stock {			# delete one or several stocks
 
 sub chg_delay {			# window to modify delay for update
   my $TL = $Main->Toplevel;	# new toplevel widget ...
+  $TL->resizable(0,0);		# no resizing
   $TL->title ("Modify Delay");
   my $SC = $TL->Scale(-from => 1,
 		      -to => 60,
@@ -1235,6 +1258,7 @@ sub chg_delay {			# window to modify delay for update
 
 sub get_comparison_symbol {	# window to modify delay for update
   my $TL = $Main->Toplevel;	# new toplevel widget ...
+  $TL->resizable(0,0);		# no resizing
   $TL->title ("Enter Comparison Symbol");
 
   my $FR = $TL->Frame->pack(-fill => 'both');
@@ -1259,6 +1283,7 @@ sub get_comparison_symbol {	# window to modify delay for update
 
 sub help_about {		# show a help window
   my $TL = $Main->Toplevel;	# uses pod2text on this very file :->
+  $TL->resizable(0,0);		# no resizing
   $TL->title("Help about smtm");
   my $Text = $TL->Scrolled("Text", 
 			   -width => 80, 
@@ -1273,6 +1298,7 @@ sub help_about {		# show a help window
 
 sub help_license {		# show a license window
   my $TL = $Main->Toplevel;	# uses pod2text on this very file :->
+  $TL->resizable(0,0);		# no resizing
   $TL->title("Copying smtm");
   my $Text = $TL->Text(-width => 77, 
 		       -height => 21)->pack();
@@ -1291,6 +1317,7 @@ sub help_license {		# show a license window
 sub get_firewall_id {
   my ($user,$passwd);
   my $TL = $Main->Toplevel;	# new toplevel widget ...
+  $TL->resizable(0,0);		# no resizing
   $TL->title ("Specify Firewall ID");
   my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
