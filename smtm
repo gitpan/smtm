@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.115 2004/04/03 03:16:34 edd Exp $
+#   $Id: smtm.pl,v 1.116 2004/08/04 02:48:59 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -38,9 +38,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.4";		# updated from the debian/rules Makefile
+$VERSION = "1.6.5";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2004/04/03 03:16:34 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2004/08/04 02:48:59 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -518,13 +518,14 @@ sub compute_positions {
     $Dat{DivDate}{$symbol} = $arr[17] || 0;
     $Dat{DivAmount}{$symbol} = $arr[18] || 0;
     $Dat{DivYield}{$symbol} = $arr[19] || 0;
-    if ($arr[20] ne "N/A") {	# need to regularise oddball market string
+    $Dat{MarketCap}{$symbol} = "N/A"; # default to NA
+    if (defined($arr[20]) and	# need to regularise oddball market string
+	$arr[20] ne "N/A") {	
       # before the dot, the dot, first decimal, remaining decimal, units
       my ($pre,$p1,$p2,$s) = ($arr[20] =~ m/(\d*)\.(\d)(\d*)(B|M|K)$/);
       #print "$arr[20] -> $pre DOT $p1 $p2 $s\n";
-      $Dat{MarketCap}{$symbol} = "$pre" . "." . $p1 . $s;
-    } else {
-      $Dat{MarketCap}{$symbol} = "N/A";
+      $Dat{MarketCap}{$symbol} = "$pre" . "." . $p1 . $s
+	if defined($p1) and defined($s);
     }
     foreach ("EPS","PE", "DivYield") {
       $Dat{$ARG}{$symbol} = 0 if $Dat{$ARG}{$symbol} eq "N/A";
@@ -626,8 +627,8 @@ sub update_display {
   foreach my $val (values %{$Dat{MarketCap}}) {
     my $nval = $val;
     $nval =~ s/(B|M|K)$//;  
-    $max_mktcap = $nval if (defined($val) and $val ne "N/A" 
-			   and $val ne "-" and $nval > $max_mktcap);
+    $max_mktcap = $nval if (defined($nval) and $nval ne "N/A" 
+			    and $nval ne "-" and $nval > $max_mktcap);
   }
 
   my $max_fpos = 0;
@@ -932,33 +933,36 @@ sub view_image {
     $Dat{Photo}[$arg] = "placeholder";  # and an image placeholder 
     add_image_close_button($arg, $new);
   } else {
-    my $new = 0;			# by default we renew 
+    my $new = 0;			# by default we renew
     my ($TL, $PH);
 
     if (!exists($Dat{Chart}[$arg])) {
       $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
       $new = 1;				# remember that this is a first 
     }
-    $Dat{Chart}[$arg]->title("Graph for $arr[1] at " . 
-			     POSIX::strftime("%H:%M", localtime));
-    $TL = $Dat{Chart}[$arg];
-    #$TL->resizable(0,0);		# no resizing
+    ## test if Tk object still Exists as users may have killed it
+    if (defined($Dat{Chart}[$arg]) and Exists($Dat{Chart}[$arg])) {
+      $Dat{Chart}[$arg]->title("Graph for $arr[1] at " . 
+			       POSIX::strftime("%H:%M", localtime));
+      $TL = $Dat{Chart}[$arg];
+      #$TL->resizable(0,0);		# no resizing
 
-    if (exists($Dat{Image}[$arg])) { 	# if we have a previous image
-      $Dat{Image}[$arg]->delete; 	# delete it (to reclaim memory)
+      if (exists($Dat{Image}[$arg])) { 	# if we have a previous image
+	$Dat{Image}[$arg]->delete; 	# delete it (to reclaim memory)
+      }
+      ## can pass the web-request response to Photo widget once base64 encoded
+      $Dat{Image}[$arg] = $TL->Photo(-data => encode_base64($resp->content),
+				     -format => "gif");
+      $PH = $Dat{Image}[$arg];
+
+      if (exists($Dat{Label}[$arg])) {	# if we have a previous label
+	$Dat{Label}[$arg]->destroy();	# destroy it (to make new one visible)
+      }
+      $Dat{Label}[$arg] = $TL->Label(-image => $PH)->pack();
+
+      ##
+      add_image_close_button($arg, $new);
     }
-    ## can pass the web-request response to Photo widget once base64 encoded
-    $Dat{Image}[$arg] = $TL->Photo(-data => encode_base64($resp->content),
-				   -format => "gif");
-    $PH = $Dat{Image}[$arg];
-
-    if (exists($Dat{Label}[$arg])) {	# if we have a previous label
-      $Dat{Label}[$arg]->destroy();	# destroy it (to make new one visible)
-    }
-    $Dat{Label}[$arg] = $TL->Label(-image => $PH)->pack();
-
-    ##
-    add_image_close_button($arg, $new);
   }
 }
 
