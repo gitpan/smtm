@@ -32,6 +32,9 @@ Yin Zhou	     for a (modified) patch to sort as per .smtm file order
 Paul Brossier	     for pointing out that fx symbols as GBPEUR=X didn't load
 Chris Eidem	     for reporting the LWP::UserAgent issue
 Bruce Bowler	     for suggesting to tighten use of pack(-fill, not pack(fill
+Robert A. Schmied    for pointing out the error in 'show_details', and a
+                     patch that fixed a decent part of it, and then some 
+                     more patches :)
 
 and all the kind folks who dropped a line to either report a bug, and/or 
 say that they liked the program... 

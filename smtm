@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.108 2004/03/10 03:13:34 edd Exp $
+#   $Id: smtm.pl,v 1.114 2004/03/18 04:08:07 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -38,9 +38,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.1";		# updated from the debian/rules Makefile
+$VERSION = "1.6.2";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2004/03/10 03:13:34 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2004/03/18 04:08:07 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -286,7 +286,7 @@ sub menus {			# create the menus
   $M[3]->AddItems(["command" => "~License", -command => \&help_license]);
 
   $Main->configure(-title => "smtm"); # this will be overridden later
-  ## $Main->resizable(0,0);	# don't allow width or height resizing
+  $Main->resizable(0,0);	# don't allow width or height resizing
   $Main->iconname("smtm");	
 }
 
@@ -495,10 +495,17 @@ sub compute_positions {
       $Dat{DaysHeld}{$symbol} =
 	Delta_Format(DateCalc($Dat{PurchDate}{$symbol},
 			      $today, undef, 2), 0, "%dt");
-      $Dat{Return}{$symbol} = ($Dat{Price}{$symbol} /
+      if ( $Dat{DaysHeld}{$symbol} > 365 ) {
+	$Dat{Return}{$symbol} = ($Dat{Price}{$symbol} /
 				 $Dat{PurchPrice}{$symbol} - 1) * 100
-				 * 365 / $Dat{DaysHeld}{$symbol}
+				   * 365 / $Dat{DaysHeld}{$symbol}
+				     * ($shares < 0 ? -1 : 1);
+      } else {			# don't annualize
+        $Dat{Return}{$symbol} = ($Dat{Price}{$symbol} /
+                                 $Dat{PurchPrice}{$symbol} - 1) * 100
 				   * ($shares < 0 ? -1 : 1);
+      }
+
     } else {
       $Dat{DaysHeld}{$symbol} = undef;
       $Dat{Return}{$symbol} = undef;
@@ -794,7 +801,7 @@ sub show_details {		# display per-share details
 		"52 Week Range", "Earnings/Share", "Price/Earnings",
 		"Dividend Date", "Dividend Amount", "Dividend Yield",
 		"Market Capital");
-  my $Text = $TL->Text(-height => 1 + $#text + 6, # 6 computed position values
+  my $Text = $TL->Text(-height => 1 + $#text + 7, # 7 computed position values
 		       -width => 39,
 		       -font => $BFont,
 		       )->pack();
@@ -824,9 +831,29 @@ sub show_details {		# display per-share details
   $Text->insert('end', sprintf("%-16s %s\n", "Purchase Price",
 		$Dat{PurchPrice}{$symbol} ? 
 		sprintf("%.2f",$Dat{PurchPrice}{$symbol}) : "NA"));
-  $Text->insert('end', sprintf("%-16s %s\n", "Annual. Return", 
-		defined($Dat{Return}{$symbol}) ?
-		sprintf("%.2f%%", $Dat{Return}{$symbol}) : "NA"));
+
+  if ( $shares != 0 ) {
+    my $fx = $Dat{FX}{ $Dat{Cross}{$symbol} } || 1;
+    my $gl = ($Dat{Price}{$symbol} - $Dat{PurchPrice}{$symbol})
+      * ($shares < 0 ? -1 : 1) * $fx;
+    $Text->insert('end', sprintf("%-16s %s\n", "Profit or Loss",
+				 sprintf("%.2f", $gl * $shares)));
+  } else {
+    $Text->insert('end', sprintf("%-16s %s\n", "Profit or Loss", "NA"));
+  }
+
+  if ( defined($Dat{Return}{$symbol}) && $Dat{DaysHeld}{$symbol} > 365 ) {
+    $Text->insert('end', sprintf("%-16s %s\n", "Annual. Return", 
+				 defined($Dat{Return}{$symbol}) ?
+				 sprintf("%.2f%%", 
+					 $Dat{Return}{$symbol}) : "NA"));
+  } else {
+    $Text->insert('end', sprintf("%-16s %s\n", "YTD Return", 
+				 defined($Dat{Return}{$symbol}) ?
+				 sprintf("%.2f%%", 
+					 $Dat{Return}{$symbol}) : "NA"));
+  }
+
   button_or_mouseclick_close($TL,$Text);
 }
 
@@ -884,12 +911,14 @@ sub view_image {
   my $resp = $ua->request(GET $url);
   if ($resp->is_error) {		# error in retrieving the chart;
     my $new = 0;			# by default we renew 
-    if (!exists($Dat{Chart}[$arg])) {  
+    my ($TL, $PH);
+
+    if (!exists($Dat{Chart}[$arg])) {
       $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
       $new = 1;				# remember that this is a first 
     }
-    my $TL = $Dat{Chart}[$arg];		# most likely 404 (not found);
-    $TL->resizable(0,0);		# no resizing
+    $TL = $Dat{Chart}[$arg];		# most likely 404 (not found);
+    #$TL->resizable(0,0);		# no resizing
     $TL->title ("Error");		# Yahoo returns HTML, not a NULL,
     $Dat{Chart}[$arg] = $TL;		# store for later update 
     my $Text = $TL->Label(-padx =>5,	# so need to check return code
@@ -903,14 +932,14 @@ sub view_image {
     my $new = 0;			# by default we renew 
     my ($TL, $PH);
 
-    if (!exists($Dat{Chart}[$arg])) {  #}or defined($Dat{Chart}[$arg])) {
+    if (!exists($Dat{Chart}[$arg])) {
       $Dat{Chart}[$arg] = $Main->Toplevel; # new toplevel widget ...
       $new = 1;				# remember that this is a first 
     }
     $Dat{Chart}[$arg]->title("Graph for $arr[1] at " . 
 			     POSIX::strftime("%H:%M", localtime));
     $TL = $Dat{Chart}[$arg];
-    $TL->resizable(0,0);		# no resizing
+    #$TL->resizable(0,0);		# no resizing
 
     if (exists($Dat{Image}[$arg])) { 	# if we have a previous image
       $Dat{Image}[$arg]->delete; 	# delete it (to reclaim memory)

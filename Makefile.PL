@@ -3,7 +3,7 @@
 #
 # smtm --- A global stock ticker for X11 and Windoze
 #
-# Copyright (C) 1999 - 2003  Dirk Eddelbuettel <edd@debian.org>
+# Copyright (C) 1999 - 2004  Dirk Eddelbuettel <edd@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,11 +25,12 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
 	      'NAME'		=> 'smtm',
 	      'VERSION_FROM'	=> 'smtm',
-	      'PREREQ_PM'	=> { "Date::Manip"	=> 5.0,
-				     "LWP::UserAgent"	=> 1.23,
-				     "MIME::Base64"	=> 2.12,
-				     "HTML::Parser"	=> 2.20,
-				     "Tk"		=> 800.015
+	      'PREREQ_PM'	=> { "Date::Manip"	   => 5.0,
+				     "Finance::YahooQuote" => 0.2,
+				     "LWP::UserAgent"	   => 1.23,
+				     "MIME::Base64"	   => 2.12,
+				     "HTML::Parser"	   => 2.20,
+				     "Tk"		   => 800.015
 				 },
 	      ($] >= 5.005 ?
 	       ('ABSTRACT'   	=> 'Stock quote monitor and portfolio tool',
