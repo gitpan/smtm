@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.114 2004/03/18 04:08:07 edd Exp $
+#   $Id: smtm.pl,v 1.115 2004/04/03 03:16:34 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -38,9 +38,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.2";		# updated from the debian/rules Makefile
+$VERSION = "1.6.3";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2004/03/18 04:08:07 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2004/04/03 03:16:34 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -293,18 +293,20 @@ sub menus {			# create the menus
 sub buttons {			# create all display buttons
 
   @{$Dat{NA}} = sort @{$Dat{Arg}};
+  $Main->resizable(1,1);
   $BFrame->destroy() if Tk::Exists($BFrame);
-  $BFrame = $Main->Frame()->pack(-side=>'top',
-				 -fill=>'x');
-  $BFrame->Label->repeat($options{delay}*1000*60, \&update_display_variables);
-  my $balloon = $BFrame->Balloon();
+  $BFrame = $Main->Frame()->pack(-side=>'top', -fill=>'x');
+  $BFrame->Label->repeat($options{delay}*1000*60, 
+			 \&update_display_variables);
 
+  $Header->destroy() if Tk::Exists($Header);
   $Header = $BFrame->Label(-anchor => 'w',
- 			   -font => $BFont,
+			   -font => $BFont,
 			   -borderwidth => 3,
- 			   -relief => 'groove',
- 			   -textvariable => \$headertext,
+			   -relief => 'groove',
+			   -textvariable => \$headertext,
 			  )->pack(-side => 'top', -fill => 'x');
+  my $balloon = $BFrame->Balloon();
 
   foreach (0..$#{$Dat{Arg}}) {		 # set up the buttons
     $Buttons[$ARG]->destroy() if Tk::Exists($Buttons[$ARG]);
@@ -322,6 +324,7 @@ sub buttons {			# create all display buttons
 		     		    "Mouse-2 to edit, ".
 		                    "Mouse-3 for chart");
   }
+  $Main->resizable(0,0);
 
   # are we dealing with firewalls, and do we need to get the info ?
   if (defined($options{firewall}) and 
@@ -1014,7 +1017,8 @@ sub select_file_and_open {
     $options{file} = $selfile;
     read_config();
     init_fx();
-  } 
+    buttons();
+  }
 }
 
 sub select_file_and_save {
@@ -1102,7 +1106,7 @@ sub edit_stock {
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Edit Stock");
   $TL->resizable(0,0);		# no resizing
-  my $FR = $TL->Frame->pack(-fill => 'both');
+  my $FR = $TL->Frame->pack(-fill => 'both', -fill => 'x');
   my $row = 0;
   my @data = ( $Dat{Symbol}{$key},
 	       $Dat{GivenName}{$key} || $Dat{Name}{$key}, 
@@ -1127,7 +1131,7 @@ sub edit_stock {
 		$Dat{PurchPrice}{$key} = defined($data[4]) ? $data[4] : 0;
 		$Dat{PurchDate}{$key}  = defined($data[5]) ? $data[5] : 0;
 		$TL->destroy();
-		init_fx(); 
+		init_fx();
 	      }
 	     )->pack(-side => 'bottom');
 }
@@ -1142,7 +1146,6 @@ sub init_fx {			# find unique crosscurrencies
       $hash{$val} = 1;		# store that's we processed it
     }
   }
-  buttons();
 }
 
 sub show_gallery {		# update the pictures in 'gallery' mode
@@ -1173,6 +1176,7 @@ sub init_data {			# fill all arguments into main data structure
   }
 
   init_fx();
+  buttons();
 }
 
 sub file_save {			# store in resource file
@@ -1231,6 +1235,7 @@ sub add_stock {
 				$TL->destroy();
 				insert_stock($ARG);
 				init_fx();
+				buttons();
 			      }
 	     )->pack(-side => 'bottom');
 }
