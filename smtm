@@ -38,7 +38,7 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.3";		# updated from the debian/rules Makefile
+$VERSION = "1.6.4";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
   sprintf("%s", q$Date: 2004/04/03 03:16:34 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
