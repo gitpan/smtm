@@ -1,3 +1,20 @@
+smtm (1.5.6) unstable; urgency=low
+
+  * Bug fix release:
+  
+    - smtm: correct small error where defensive assignment of number of
+      share was not used
+    
+    - smtm: use pack(-fill ...) throughtout, not pack(fill => ...), as this
+      seems to trip up some 5.8.* versions of Perl. Thanks to Bruce Bowler
+      for reporting this
+  
+    - smtm: use LWP::UserAgent->new(), not RequestAgent->new(), as this seems
+      to trip up some ActiveState version. Thanks to Chris Eidem and others
+      for reporting this.
+
+ -- Dirk Eddelbuettel <edd@debian.org>  Wed, 15 Oct 2003 20:47:06 -0500
+
 smtm (1.5.5) unstable; urgency=low
 
   * Bug fix release:

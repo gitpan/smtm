@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.98 2003/05/03 14:15:46 edd Exp $
+#   $Id: smtm.pl,v 1.100 2003/10/16 01:40:08 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -29,7 +29,7 @@ use Getopt::Long;		# parse command-line arguments
 use HTTP::Request::Common;	# still needed to get charts
 use IO::File;			# needed for new_tmpfile or Tk complains
 use POSIX qw(strftime);		# strftime function
-use MIME::Base64;		# to encore graphics directly for Photo widget
+use MIME::Base64;		# to encode graphics directly for Photo widget
 use Text::ParseWords;		# parse .csv files more reliably
 use Tk;				# who needs gates in a world full o'windows?
 use Tk::Balloon;		# widget for context-sensitive help
@@ -37,9 +37,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.5.5";		# updated from the debian/rules Makefile
+$VERSION = "1.5.6";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2003/05/03 14:15:46 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2003/10/16 01:40:08 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -64,10 +64,10 @@ if ($OSNAME =~ m/MSWin32/) {	# branch out for OS
 }
 
 # general options for user interface and behaviour, sort-of ugly global
-$options{file} = File::Spec->catfile($ENV{HOME}, ".smtmrc");  # default rc file
+$options{file} = File::Spec->catfile($ENV{HOME}, ".smtmrc");  #default rc file
 $options{sort} = 'n';		# sort by name
 $options{timeout} = 180;	# default timeout used in LWP code
-$options{columns} = 'nrla';	# default colums: name, last, rel.chg, abs. chg
+$options{columns} = 'nrla';	# default colums: name,last, rel.chg, abs. chg
 $options{percent} = 0;		# default to percentage display, not bps
 $options{paused} = 0;		# default to not paused, i.e. update
 $options{delay} = 5;		# wait this many minutes
@@ -77,7 +77,7 @@ $options{delay} = 5;		# wait this many minutes
 $chart{length} = '1';		# one-year chart is default chart
 $chart{log_scale} = 1;		# plot on logarithmic scale
 $chart{volume} = 1;		# show volume on seperate pane
-$chart{size} = 'm';		# plot size, default small  (m medium, l large)
+$chart{size} = 'm';		# plot size, default small (m medium, l large)
 $chart{style} = 'l';		# plot type, line ('c' candle, 'b' for bar)
 $chart{ma} = ();		# placeholder hash for mov.avg. options
 $chart{ema} = ();		# placeholder hash for exp.mov.avg. options
@@ -86,7 +86,7 @@ $chart{bollinger} = 0;		# show bollinger bands
 $chart{parabolic_sar} = 0;	# show parabolic sar
 $chart{comparison} = "";	# compare to this symbol (eg stock)
 
-my $today = ParseDate("today");	# current time and date for return calculations
+my $today = ParseDate("today");	# current time, date for return calculations
 my $symbolcounter = 0;		# needed for several pos. in same stock
 
 my %commandline_options = ("file=s"    => \$options{file}, 
@@ -139,10 +139,10 @@ sub menus {			# create the menus
   my @M;
   $M[0] = $MF->Menubutton(-text => 'File', -underline => 0,
 			 )->pack(-side => 'left');
-  $M[0]->AddItems(["command" => "~Open",   -command => \&select_file_and_open],
-		  ["command" => "~Save",   -command => \&file_save],
-		  ["command" => "Save ~As",-command => \&select_file_and_save],
-		  ["command" => "E~xit",   -command => sub { exit }]);
+  $M[0]->AddItems(["command"=> "~Open",   -command => \&select_file_and_open],
+		  ["command"=> "~Save",   -command => \&file_save],
+		  ["command"=> "Save ~As",-command => \&select_file_and_save],
+		  ["command"=> "E~xit",   -command => sub { exit }]);
 
   $M[1] = $MF->Menubutton(-text => 'Edit', -underline => 0,
 			 )->pack(-side => 'left');
@@ -284,6 +284,7 @@ sub menus {			# create the menus
   $M[3]->AddItems(["command" => "~License", -command => \&help_license]);
 
   $Main->configure(-title => "smtm"); # this will be overridden later
+  ## $Main->resizable(0,0);	# don't allow width or height resizing
   $Main->iconname("smtm");	
 }
 
@@ -474,7 +475,7 @@ sub compute_positions {
     $Dat{Bps}{$symbol} = 100*$pc * ($shares < 0 ? -1 : 1);
     my $plcontr =  $shares *  $Dat{Change}{$symbol} * $fx;
     $Dat{PLContr}{$symbol} = $plcontr;
-    my $value = $Dat{Shares}{$symbol} * $Dat{Price}{$symbol} * $fx;
+    my $value = $shares * $Dat{Price}{$symbol} * $fx;
     $Dat{Value}{$symbol} = $value;
     $Dat{Volume}{$symbol} = $arr[7] || 0;
     ($Dat{YearLow}{$symbol}, $Dat{YearHigh}{$symbol}) = (undef, undef);
@@ -825,7 +826,7 @@ sub view_image {
   my @arr = split (';', $Dat{Data}{ $Dat{Map}[$arg]  });
 
   my $url = charturl(lc( $Dat{Symbol}{$arr[0]} ));
-  my $ua = RequestAgent->new;	
+  my $ua = LWP::UserAgent->new;	
   $ua->env_proxy;
   $ua->proxy('http', $options{proxy}) if $options{proxy};
   $ua->timeout($options{timeout});	# time out after this many secs
@@ -996,7 +997,7 @@ sub edit_stock {
   my $key = $Dat{Map}[$arg];
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Edit Stock");
-  my $FR = $TL->Frame->pack(fill => 'both');
+  my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
   my @data = ( $Dat{Symbol}{$key},
 	       $Dat{GivenName}{$key} || $Dat{Name}{$key}, 
@@ -1107,7 +1108,7 @@ sub file_save {			# store in resource file
 sub add_stock {
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Add Stock");
-  my $FR = $TL->Frame->pack(fill => 'both');
+  my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
   my @data = ("", "", "", "", "", "" );
   foreach ('Symbol', 'Name', 'Nb of Shares', 'Cross-currency', 
@@ -1182,7 +1183,7 @@ sub get_comparison_symbol {	# window to modify delay for update
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Enter Comparison Symbol");
 
-  my $FR = $TL->Frame->pack(fill => 'both');
+  my $FR = $TL->Frame->pack(-fill => 'both');
   my $data = $chart{comparison};
   my $label = 'Comparison Symbol';
   my $E = $FR->Entry(-textvariable => \$data,
@@ -1237,7 +1238,7 @@ sub get_firewall_id {
   my ($user,$passwd);
   my $TL = $Main->Toplevel;	# new toplevel widget ...
   $TL->title ("Specify Firewall ID");
-  my $FR = $TL->Frame->pack(fill => 'both');
+  my $FR = $TL->Frame->pack(-fill => 'both');
   my $row = 0;
   my @data = ( "", "" );
   foreach ('Firewall Account', 'Firewall Password') {
