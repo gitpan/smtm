@@ -26,6 +26,7 @@ build-stamp:
 		"s/VERSION = \".*\";/VERSION = \""$(version)"\";/" $(package)
 	perl Makefile.PL INSTALLDIRS=vendor
 	$(MAKE)
+	$(MAKE) test
 	pod2html --flush $(package) > $(package).html
 	pod2man          $(package) > $(package).1
 	touch build-stamp

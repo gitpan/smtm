@@ -18,18 +18,18 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.96 2003/04/27 12:48:44 edd Exp $
+#   $Id: smtm.pl,v 1.98 2003/05/03 14:15:46 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
-use Data::Dumper;
 use Date::Manip;		# for date calculations
 use File::Spec;			# portable filename operations
 use Finance::YahooQuote;	# fetch quotes from Yahoo!
 use Getopt::Long;		# parse command-line arguments
 use HTTP::Request::Common;	# still needed to get charts
 use IO::File;			# needed for new_tmpfile or Tk complains
-use POSIX qw(strftime tmpnam);	# strftime and tmpnam functions
+use POSIX qw(strftime);		# strftime function
+use MIME::Base64;		# to encore graphics directly for Photo widget
 use Text::ParseWords;		# parse .csv files more reliably
 use Tk;				# who needs gates in a world full o'windows?
 use Tk::Balloon;		# widget for context-sensitive help
@@ -37,9 +37,9 @@ use Tk::FileSelect;		# widget for selecting files
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.5.3";		# updated from the debian/rules Makefile
+$VERSION = "1.5.5";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2003/04/27 12:48:44 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2003/05/03 14:15:46 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -838,47 +838,19 @@ sub view_image {
 		-text =>"The chart for $arr[1] is not available.")->pack;
     button_or_mouseclick_close($TL,$Text);
   } else {
-    my $tmpnam = POSIX::tmpnam();
-    open FILE, "> $tmpnam";
-    binmode FILE;
-    print FILE $resp->content;
-    close FILE;
-## begin of testcode
-#     my $symbol = $Dat{Symbol}{$arr[0]};
-#     if (not defined($Dat{ImageFrame}{$symbol})) {
-#       $Dat{ImageFrame}{$symbol} = $Main->Toplevel;
-#       $Dat{ImageFrame}{$symbol}->title("Graph for $arr[1]");
-#       if (not $options{nookbutton}) {
-# 	$Dat{ImageFrame}{$symbol}->Button(-text => 'Ok',
-# 					  -command => 
-#   	  sub { $Dat{ImageFrame}{$symbol}->destroy(); } 
-# 					 )->pack(-side => 'bottom');
-#       }
-#     }
-#     my $TL = $Dat{ImageFrame}{$symbol};
-#     $Dat{ImageInner}{$symbol}->destroy() 
-#       if Tk::Exists($Dat{ImageInner}{$symbol});
-#     $Dat{ImageInner}{$symbol} = $TL->Frame()->pack(-side=>'top');
-#     my $IF = $Dat{ImageInner}{$symbol}->pack(-side=>'top');
-
-#     my $PH = $IF->Photo(-file => $tmpnam);
-
-# #    my $LB = $IF->Label(-image => $PH)->pack(-side=>'top');
-
-#     $Dat{Photo}{$symbol}->destroy() if Tk::Exists($Dat{Photo}{$symbol});
-#     $Dat{Photo}{$symbol} = $IF->Label(-image => $PH)->pack(-side=>'top');
-#     my $LB = $Dat{Photo}{$symbol};
-
-#     if ($options{nookbutton}) {
-#       $LB->bind("<Button-1>", sub { $TL->destroy}); # also close on Button-1
-#     }
-## end of testcode
     my $TL = $Main->Toplevel;		# new toplevel widget ...
     $TL->title ("Graph for $arr[1]");
-    my $PH = $TL->Photo(-file => $tmpnam);
+    ## can pass the web-request response to Photo widget once base64 encoded
+    my $PH = $TL->Photo(-data => encode_base64($resp->content),
+			-format => "gif");
     my $LB = $TL->Label(-image => $PH)->pack();
-    unlink($tmpnam);
-    button_or_mouseclick_close($TL,$LB);
+    if ($options{nookbutton}) {
+      $LB->bind("<Button-1>", sub { $PH->delete; $TL->destroy; }); 
+    } else {
+      $TL->Button(-text => 'Ok',
+		  -command => sub { $PH->delete; $TL->destroy();} 
+		 )->pack(-side => 'bottom');
+    }
   }
 }
 

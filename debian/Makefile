@@ -54,7 +54,7 @@ distclean:	clean
 realclean:	clean
 
 FILES=		$(file) $(file).html Makefile.PL COPYING BUGS THANKS TODO \
-		examples/*
+		examples/* t/*
 
 dist:		$(file).html tar zip 
 

@@ -3,7 +3,7 @@
 #
 # smtm --- A global stock ticker for X11 and Windoze
 #
-# Copyright (C) 1999, 2000, 2001  Dirk Eddelbuettel <edd@debian.org>
+# Copyright (C) 1999 - 2003  Dirk Eddelbuettel <edd@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 # 
-# $Id: Makefile.PL,v 1.1 2000/06/18 21:16:30 edd Exp edd $
-#
 
 use ExtUtils::MakeMaker;
 
@@ -29,6 +27,7 @@ WriteMakefile(
 	      'VERSION_FROM'	=> 'smtm',
 	      'PREREQ_PM'	=> { "Date::Manip"	=> 5.0,
 				     "LWP::UserAgent"	=> 1.23,
+				     "MIME::Base64"	=> 2.12,
 				     "HTML::Parser"	=> 2.20,
 				     "Tk"		=> 800.015
 				 },

@@ -1,3 +1,24 @@
+smtm (1.5.5) unstable; urgency=low
+
+  * Bug fix release:
+  
+    - smtm: Chart images are no longer saved to a tempfile, but rather 
+      passed directly (in base64 encoding) to the Photo widget
+    
+    - smtm: The Photo widget is now deleted on <destroy> plugging a
+      memory hole
+  
+    - Makefile.PL: Depend on MIME::Base64
+  
+    - debian/control: Depends: on libmime-base64-perl | perl (>= 5.8.0)
+      [ MIME::Base64 is a package with perl 5.6.*, but included in 5.8.* ]
+  
+    - t/use?.t: Added to see if Finance::YahooQuote and Tk can be loaded.
+  
+    - debian/control: Added Build-Depends for test
+
+ -- Dirk Eddelbuettel <edd@debian.org>  Sun,  4 May 2003 16:10:51 -0500
+
 smtm (1.5.4) unstable; urgency=low
 
   * Bug fix release:

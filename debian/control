@@ -2,12 +2,12 @@ Source: smtm
 Section: misc
 Priority: optional
 Maintainer: Dirk Eddelbuettel <edd@debian.org>
-Standards-Version: 3.5.8
-Build-Depends-Indep: debhelper (>= 3.0)
+Standards-Version: 3.5.9
+Build-Depends-Indep: debhelper (>= 3.0), libwww-perl, libdate-manip-perl, libfinance-yahooquote-perl (>= 0.18), perl-tk
 
 Package: smtm
 Architecture: all
-Depends: ${perl:Depends}, libdate-manip-perl, perl-tk, libfinance-yahooquote-perl (>= 0.18)
+Depends: ${perl:Depends}, libdate-manip-perl | perl (>= 5.8.0), libmime-base64-perl, perl-tk, libfinance-yahooquote-perl (>= 0.18)
 Description: Show Me The Money is a configurable Perl/Tk stock ticker program
  smtm, which is a not overly clever acronym for Show Me The Money, is a
  simple stock ticker application. It creates and automatically updates a
