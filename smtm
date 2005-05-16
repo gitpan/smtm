@@ -2,7 +2,7 @@
 #
 #   smtm --- A global stock ticker for X11 and Windoze
 #
-#   Copyright (C) 1999 - 2004  Dirk Eddelbuettel <edd@debian.org>
+#   Copyright (C) 1999 - 2005  Dirk Eddelbuettel <edd@debian.org>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.116 2004/08/04 02:48:59 edd Exp $
+#   $Id: smtm.pl,v 1.117 2005/05/16 03:21:51 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -35,12 +35,13 @@ use Text::ParseWords;		# parse .csv files more reliably
 use Tk;				# who needs gates in a world full o'windows?
 use Tk::Balloon;		# widget for context-sensitive help
 use Tk::FileSelect;		# widget for selecting files
+use Tk::PNG;			# as of May 2005, Yahoo! send png charts
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.5";		# updated from the debian/rules Makefile
+$VERSION = "1.6.6";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2004/08/04 02:48:59 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2005/05/16 03:21:51 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -115,7 +116,7 @@ if ($#ARGV==-1) {		# if no argument given
     warn("No arguments given, and no file found. Using example portfolio.\n");
     init_data(("RY.TO::50::48:20000104",
 	       "C::50:USDCAD:50.50:20000103",
-	       "DBKGn.DE::50:EURCAD:86.5:20010102",
+	       "DBK.DE::50:EURCAD:86.5:20010102",
 	       "HSBA.L::50:GBPCAD:967.02:20010101"))
   }
 } else {			# else 
@@ -952,7 +953,8 @@ sub view_image {
       }
       ## can pass the web-request response to Photo widget once base64 encoded
       $Dat{Image}[$arg] = $TL->Photo(-data => encode_base64($resp->content),
-				     -format => "gif");
+## as of May 2005, png is used	     -format => "gif");
+				     -format => "png");
       $PH = $Dat{Image}[$arg];
 
       if (exists($Dat{Label}[$arg])) {	# if we have a previous label
@@ -1389,7 +1391,7 @@ sub help_exit {			# command-line help
 smtm -- Display/update a global stock ticker, profit/loss counter and charts
 
 smtm version $VERSION of $date
-Copyright (C) 1999 - 2004 by Dirk Eddelbuettel <edd\@debian.org>
+Copyright (C) 1999 - 2005 by Dirk Eddelbuettel <edd\@debian.org>
 smtm comes with ABSOLUTELY NO WARRANTY. This is free software, 
 and you are welcome to redistribute it under certain conditions. 
 For details, select Help->License or type Alt-h l once smtm runs.
@@ -1719,7 +1721,7 @@ Finance charts.
 
 =head1 COPYRIGHT
 
-smtm is (c) 1999 - 2004 by Dirk Eddelbuettel <edd@debian.org>
+smtm is (c) 1999 - 2005 by Dirk Eddelbuettel <edd@debian.org>
 
 Updates to this program might appear at
 F<http://dirk.eddelbuettel.com/code/smtm.html>. If you enjoy this
@@ -1771,11 +1773,13 @@ On Windows, F<smtm> can use the Perl distribution from
 F<http://www.activestate.com>.  On both Unix and Windows, B<smtm>
 requires the C<Tk> module for windowing, the C<LWP> module for data
 retrieval over the web, and the excellent C<Date::Manip> module for
-the date parsing and calculations.
+the date parsing and calculations. Finance::YahooQuote is used for
+actual data access. Tk::PNG is used to display the png charts since
+Yahoo! switched from gif to png around May 2005.
 
 =head1 COREQUISITES
 
-None
+None.
 
 =head1 OSNAMES
 

@@ -35,6 +35,8 @@ Bruce Bowler	     for suggesting to tighten use of pack(-fill, not pack(fill
 Robert A. Schmied    for pointing out the error in 'show_details', and a
                      patch that fixed a decent part of it, and then some 
                      more patches :)
+Bruce Bowler, Michael Labhard, Thomas Chiverton, "Jim", Russ Herrold
+                     for the heads-up about Yahoo!'s gif-to-png change
 
 and all the kind folks who dropped a line to either report a bug, and/or 
 say that they liked the program... 

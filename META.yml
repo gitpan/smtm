@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         smtm
-version:      1.6.5
+version:      1.6.6
 version_from: smtm
 installdirs:  site
 requires:
@@ -11,6 +11,7 @@ requires:
     LWP::UserAgent:                1.23
     MIME::Base64:                  2.12
     Tk:                            800.015
+    Tk::PNG:                       2.005
 
 distribution_type: module
 generated_by: ExtUtils::MakeMaker version 6.17
