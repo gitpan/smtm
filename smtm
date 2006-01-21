@@ -39,7 +39,7 @@ use Tk::PNG;			# as of May 2005, Yahoo! send png charts
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.7";		# updated from the debian/rules Makefile
+$VERSION = "1.6.8";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
   sprintf("%s", q$Date: 2005/05/16 03:21:51 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
