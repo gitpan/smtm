@@ -1,2 +1,0 @@
-?package(smtm):needs="X11" section="Apps/Tools"\
-  title="smtm" command="/usr/bin/smtm"
