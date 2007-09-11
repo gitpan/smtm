@@ -37,6 +37,8 @@ Robert A. Schmied    for pointing out the error in 'show_details', and a
                      more patches :)
 Bruce Bowler, Michael Labhard, Thomas Chiverton, "Jim", Russ Herrold
                      for the heads-up about Yahoo!'s gif-to-png change
+Michael Kurlin, Clinton R Lambe, Ian Seow
+	             for noticing the required change in Yahoo!'s chart url
 
 and all the kind folks who dropped a line to either report a bug, and/or 
 say that they liked the program... 

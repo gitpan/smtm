@@ -2,7 +2,7 @@
 #
 #   smtm --- A global stock ticker for X11 and Windoze
 #
-#   Copyright (C) 1999 - 2005  Dirk Eddelbuettel <edd@debian.org>
+#   Copyright (C) 1999 - 2007  Dirk Eddelbuettel <edd@debian.org>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.117 2005/05/16 03:21:51 edd Exp $
+#   $Id: smtm.pl,v 1.119 2006/05/12 03:01:35 edd Exp edd $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -39,9 +39,9 @@ use Tk::PNG;			# as of May 2005, Yahoo! send png charts
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.8";		# updated from the debian/rules Makefile
+$VERSION = "1.6.9";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2005/05/16 03:21:51 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2006/05/12 03:01:35 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -210,15 +210,16 @@ sub menus {			# create the menus
   $M[2] = $MF->Menubutton(-text => 'Charts', -underline => 0,
 			 )->pack(-side => 'left');
   my $CasC = $M[2]->cascade(-label => "~Timeframe");
-  my %radiobutton_text = ('b'  => '~Intraday',
-			  'w'  => '~Weekly',
+  my %radiobutton_text = ('t' => 'Weekly Thumbnail',
+			  'b' => '~Intraday',
+			  'w' => '~Weekly',
 			  '3' => '~Three months',
 			  '6' => '~Six months',
 			  '1' => '~One year',
 			  '2' => 'Two ~years',
 			  '5' => '~Five years',
 			  'm' => '~Max years');
-  foreach (qw/b w 3 6 1 2 5 m/) {
+  foreach (qw/t b w 3 6 1 2 5 m/) {
     $CasC->radiobutton(-label => $radiobutton_text{$ARG},
 		       -variable => \$chart{length}, -value => $ARG);
   }
@@ -256,7 +257,7 @@ sub menus {			# create the menus
   }
   my $CasTA = $M[2]->cascade(-label => 'Te~chnical Analysis');
   # see http://help.yahoo.com/help/us/fin/chart/chart-12.html
-  my %ta_text = ('m26-12-9'   => 'MACD (MA Conv./Divergence)', 
+  my %ta_text = ('m26_12_9'   => 'MACD (MA Conv./Divergence)', 
 		 'f14'        => 'MFI (Money Flow)',
 		 'p12'        => 'ROC (Rate of Change)',
 		 'r14'        => 'RSI (Relative Strength Index)',
@@ -973,10 +974,13 @@ sub charturl {			# initially (almost) verbatim from Dj's
   my $url;			# and very significantly extended
 
   my $len = $chart{length};
-  if ($len =~ m/(b|w)/o) {	# if 'b' or 'w' for intra-day or 5 day
+  if ($len =~ m/t/o) {		# if 'm' for thumbnail
+    $url = "http://ichart.yahoo.com/v?s=$symbol"; ## really small
+  } elsif ($len =~ m/(b|w)/o) {	# if 'b' or 'w' for intra-day or 5 day
     ## next line no longer needed, IIRC we once used i for what we now use b
     ##$len = 'b' if $len eq 'i';	# intraday chart uses Yahoo! code 'b'
     $url = "http://ichart.yahoo.com/$len?s=$symbol";
+    #$url = "http://ichart.yahoo.com/v?s=$symbol"; ## really small
   } else {			# everything else, ie three month onwards
     $len .= 'y' if $len=~ m/(1|2|5|m)/o;# code for year is '1y' ... 'my'
     $len .= 'm' if $len =~ m/(3|6)/o;	# code for month is '3m' or '6m'
@@ -994,7 +998,8 @@ sub charturl {			# initially (almost) verbatim from Dj's
     foreach (keys %{$chart{technical}}) {	# for all tech. analysis opt.
       $pane .= ",$ARG" if $chart{technical}{$ARG};# add on new pane if selected
     }
-    $url = "http://cchart.yimg.com/z?" . 
+    #$url = "http://cchart.yimg.com/z?" . 
+    $url = "http://ichart.yimg.com/z?" . 
       "&s=$symbol&p=$params&t=$len&c=$chart{comparison}" .
       "&l=$log&z=$chart{size}&q=$chart{style}&a=$pane";
   }
@@ -1329,7 +1334,7 @@ sub help_about {		# show a help window
 			   -width => 80, 
 			   -scrollbars => 'e')->pack();
   button_or_mouseclick_close($TL,$Text);
-  open (FILE, "pod2text $PROGRAM_NAME | ");
+  open (FILE, "pod2text \"$PROGRAM_NAME\" | ");
   while (<FILE>) {
     $Text->insert('end', $ARG);	# insert what pod2text show when applied
   }				# to this file, the pod stuff is below
@@ -1391,7 +1396,7 @@ sub help_exit {			# command-line help
 smtm -- Display/update a global stock ticker, profit/loss counter and charts
 
 smtm version $VERSION of $date
-Copyright (C) 1999 - 2005 by Dirk Eddelbuettel <edd\@debian.org>
+Copyright (C) 1999 - 2007 by Dirk Eddelbuettel <edd\@debian.org>
 smtm comes with ABSOLUTELY NO WARRANTY. This is free software, 
 and you are welcome to redistribute it under certain conditions. 
 For details, select Help->License or type Alt-h l once smtm runs.
@@ -1424,9 +1429,11 @@ Options:
 		     capitalization and lastly, 'f' for the 'file position' 
 		     (i.e. the position in which the stock were specified)
    --chart len       select length of data interval shown in chart, choose
-		     one of 'b' (intra-day), 'w' (1 week), '3' (3 months),
+		     one of 'b' (intra-day), 'w' (1 week), '3' (3 months), 
 		     '6' (6 months), '1' (1 year), '2' (2 year), '5' 
                      (5 year) or 'm' (max years) (default: $chart{length})
+                     't' selects a five-day thumbnail, this is not available
+                     for all symbols.
    --gallery	     show and update charts of all available symbols
    --timeout len     timeout value in seconds for libwww-perl UserAgent
                      (default value: $options{timeout})
@@ -1474,7 +1481,7 @@ smtm - Display and update a configurable ticker of global stock quotes
  --proxy pr      network address and port of firewall proxy 
  --fwall [id:pw] account and password for firewall 
  --chart len     select length of data interval shown in chart
-                 (must be one of b, w, 3, 6, 1, 2, 5 or m)
+                 (must be one of b, w, 3, 6, 1, 2, 5, m or t)
  --timeout len   timeout in seconds for libwww-perl UserAgent
  --wide		 also display value changes and holdings
  --percent       show relative performance in percent instead of bps
@@ -1721,7 +1728,7 @@ Finance charts.
 
 =head1 COPYRIGHT
 
-smtm is (c) 1999 - 2005 by Dirk Eddelbuettel <edd@debian.org>
+smtm is (c) 1999 - 2007 by Dirk Eddelbuettel <edd@debian.org>
 
 Updates to this program might appear at
 F<http://dirk.eddelbuettel.com/code/smtm.html>. If you enjoy this

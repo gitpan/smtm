@@ -3,7 +3,7 @@
 #
 # smtm --- A global stock ticker for X11 and Windoze
 #
-# Copyright (C) 1999 - 2005  Dirk Eddelbuettel <edd@debian.org>
+# Copyright (C) 1999 - 2007  Dirk Eddelbuettel <edd@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
