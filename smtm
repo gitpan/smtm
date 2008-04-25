@@ -2,7 +2,7 @@
 #
 #   smtm --- A global stock ticker for X11 and Windoze
 #
-#   Copyright (C) 1999 - 2007  Dirk Eddelbuettel <edd@debian.org>
+#   Copyright (C) 1999 - 2008  Dirk Eddelbuettel <edd@debian.org>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.119 2006/05/12 03:01:35 edd Exp edd $
+#   $Id: smtm.pl,v 1.121 2008/04/24 02:30:31 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
@@ -39,9 +39,9 @@ use Tk::PNG;			# as of May 2005, Yahoo! send png charts
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.9";		# updated from the debian/rules Makefile
+$VERSION = "1.6.9.1";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2006/05/12 03:01:35 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2008/04/24 02:30:31 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -1396,7 +1396,7 @@ sub help_exit {			# command-line help
 smtm -- Display/update a global stock ticker, profit/loss counter and charts
 
 smtm version $VERSION of $date
-Copyright (C) 1999 - 2007 by Dirk Eddelbuettel <edd\@debian.org>
+Copyright (C) 1999 - 2008 by Dirk Eddelbuettel <edd\@debian.org>
 smtm comes with ABSOLUTELY NO WARRANTY. This is free software, 
 and you are welcome to redistribute it under certain conditions. 
 For details, select Help->License or type Alt-h l once smtm runs.
@@ -1728,7 +1728,7 @@ Finance charts.
 
 =head1 COPYRIGHT
 
-smtm is (c) 1999 - 2007 by Dirk Eddelbuettel <edd@debian.org>
+smtm is (c) 1999 - 2008 by Dirk Eddelbuettel <edd@debian.org>
 
 Updates to this program might appear at
 F<http://dirk.eddelbuettel.com/code/smtm.html>. If you enjoy this
