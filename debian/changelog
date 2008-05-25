@@ -1,3 +1,9 @@
+smtm (1.6.10) unstable; urgency=low
+
+  * Bug fix release to accommodate Perl 5.10 array changes in two spots
+
+ -- Dirk Eddelbuettel <edd@debian.org>  Sun, 25 May 2008 17:48:23 -0500
+
 smtm (1.6.9.1) unstable; urgency=low
 
   * Debian bug fix release:

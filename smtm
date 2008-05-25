@@ -18,11 +18,11 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#   $Id: smtm.pl,v 1.121 2008/04/24 02:30:31 edd Exp $
+#   $Id: smtm.pl,v 1.122 2008/05/25 22:44:35 edd Exp $
 
 use strict;			# be careful out there, my friend
 use English;			# explicit variable names
-use Data::Dumper; # FIXME
+#use Data::Dumper; # FIXME
 use Date::Manip;		# for date calculations
 use File::Spec;			# portable filename operations
 use Finance::YahooQuote;	# fetch quotes from Yahoo!
@@ -39,9 +39,9 @@ use Tk::PNG;			# as of May 2005, Yahoo! send png charts
 use vars qw{%options %chart};	# need to define here for SUB {} below
 
 my				# seperate for Makefile.PL
-$VERSION = "1.6.9.1";		# updated from the debian/rules Makefile
+$VERSION = "1.6.10";		# updated from the debian/rules Makefile
 my $date =			# inner expression updated by RCS
-  sprintf("%s", q$Date: 2008/04/24 02:30:31 $ =~ /\w*: (\d*\/\d*\/\d*)/);
+  sprintf("%s", q$Date: 2008/05/25 22:44:35 $ =~ /\w*: (\d*\/\d*\/\d*)/);
 
 my (@Labels,			# labels which carry the stock info
     @Buttons,			# buttons which contain the labels, 
@@ -406,7 +406,9 @@ sub update_data {		# gather data from Yahoo! servers
 
   $today = ParseDate("today");	# current time and date for return calculations
 
-  if ($#{@{$Dat{FXarr}}}>-1) {# if there are cross-currencies
+  my $count = 0;		# count 'defined' elements in Dat{FXarr}
+  foreach my $val ($Dat{FXarr}) { $count++  if defined($val)};
+  if ($count > 0) {		# if there are cross-currencies
     my $array = getquote(@{$Dat{FXarr}});	# get FX crosses
     foreach my $ra (@$array) {	
       next unless $ra->[0];
@@ -419,7 +421,7 @@ sub update_data {		# gather data from Yahoo! servers
   # NA: name,symbol,price,last date (m/d/y),time,change,percent,volume,avg vol,
   #     bid, ask, previous,open,day range,52 week range,eps,p/e,
   #     div pay date,annual div amt, divyld, cap
-  if ($#{@{$Dat{NA}}}>-1) {	# if there are stocks for Yahoo! North America
+  if (scalar(@{$Dat{NA}})>-1) {	# if there are stocks for Yahoo! North America
     fill_with_dummies(@{$Dat{NA}});
     ## call just as the symbol, i.e. without the number key past ':'
     my @syms = map { (split(/:/, $ARG))[0]} @{$Dat{NA}};
